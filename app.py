@@ -3,13 +3,14 @@ import requests
 import streamlit as st
 from dotenv import load_dotenv
 
-# ── Load env vars ──────────────────────────────────────────────────────────────
-load_dotenv()
+# ── Load env vars (optional – app works fine with no .env) ─────────────────────
+# If .env doesn't exist dotenv simply does nothing; secrets come from the sidebar.
+load_dotenv(override=False)  # override=False: env vars already set take priority
 
 # ── Page config ────────────────────────────────────────────────────────────────
 st.set_page_config(
-    page_title="Better Than ChatGPT",
-    page_icon="🔥",
+    page_title="Echo Bot",
+    page_icon="🤖",
     layout="centered",
     initial_sidebar_state="collapsed",
 )
@@ -287,25 +288,40 @@ if "system_prompt" not in st.session_state:
 
 # ── Sidebar ────────────────────────────────────────────────────────────────────
 with st.sidebar:
-    st.markdown("## 🔥 Better Than ChatGPT")
+    st.markdown("## 🤖 Echo Bot")
     st.markdown('<div class="status-badge"><div class="status-dot"></div> Online</div>', unsafe_allow_html=True)
     st.markdown("---")
 
     # API Key
     st.markdown('<div class="sidebar-section"><h4>🔑 Authentication</h4>', unsafe_allow_html=True)
+
+    # Resolve key: sidebar input takes priority; .env is a silent fallback.
+    # We intentionally do NOT pre-fill the text field with the env key so that
+    # it is never displayed in the UI (and never at risk of being screen-shared).
     env_key = os.environ.get("GROQ_API_KEY", "")
     api_key_input = st.text_input(
         "Groq API Key",
-        value=env_key,
+        value="",                      # always blank – env key stays hidden
         type="password",
-        placeholder="gsk_...",
+        placeholder="gsk_…  (paste your key here)",
         label_visibility="collapsed",
+        help="Get a free key at console.groq.com/keys",
     )
-    api_key = api_key_input or env_key
-    if api_key:
-        st.markdown('<p style="color:#34d399;font-size:0.78rem;margin-top:0.4rem">✓ API key loaded</p>', unsafe_allow_html=True)
+    # Prefer whatever the user typed; fall back to .env silently
+    api_key = api_key_input.strip() or env_key
+
+    if api_key_input.strip():
+        st.markdown('<p style="color:#34d399;font-size:0.78rem;margin-top:0.4rem">✓ Key entered — ready to chat</p>', unsafe_allow_html=True)
+    elif env_key:
+        st.markdown('<p style="color:#34d399;font-size:0.78rem;margin-top:0.4rem">✓ Key loaded from environment</p>', unsafe_allow_html=True)
     else:
-        st.markdown('<p style="color:#f87171;font-size:0.78rem;margin-top:0.4rem">⚠ No API key – get one at console.groq.com</p>', unsafe_allow_html=True)
+        st.markdown(
+            '<p style="color:#f87171;font-size:0.78rem;margin-top:0.4rem">'
+            '⚠ No API key — paste yours above or get one free at '
+            '<a href="https://console.groq.com/keys" target="_blank" '
+            'style="color:#a5b4fc">console.groq.com</a></p>',
+            unsafe_allow_html=True,
+        )
     st.markdown("</div>", unsafe_allow_html=True)
 
     # Model selection
@@ -337,13 +353,13 @@ with st.sidebar:
         st.rerun()
 
     st.markdown("---")
-    st.markdown('<p style="color:#374151;font-size:0.72rem;text-align:center">Better Than ChatGPT · Powered by Groq</p>', unsafe_allow_html=True)
+    st.markdown('<p style="color:#374151;font-size:0.72rem;text-align:center">Echo Bot · Powered by Groq</p>', unsafe_allow_html=True)
 
 # ── Main area ─────────────────────────────────────────────────────────────────
 st.markdown("""
 <div class="chat-header">
-  <div class="logo">🔥 Better Than ChatGPT</div>
-  <div class="tagline">Faster. Smarter. Better — Powered by Groq LPU™ Inference</div>
+  <div class="logo">🤖 Echo Bot</div>
+  <div class="tagline">Your personal AI assistant — fast, smart, and powered by Groq</div>
 </div>
 """, unsafe_allow_html=True)
 
@@ -377,7 +393,7 @@ else:
             <div class="msg-wrapper bot">
               <div class="avatar bot">⚡</div>
               <div>
-                <div class="msg-label">Better Than ChatGPT</div>
+                <div class="msg-label">Echo Bot</div>
                 <div class="msg-bubble bot">{content_html}</div>
               </div>
             </div>"""
