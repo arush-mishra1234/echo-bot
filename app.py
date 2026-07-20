@@ -295,23 +295,35 @@ with st.sidebar:
     # API Key
     st.markdown('<div class="sidebar-section"><h4>🔑 Authentication</h4>', unsafe_allow_html=True)
 
-    # Resolve key: sidebar input takes priority; .env is a silent fallback.
-    # We intentionally do NOT pre-fill the text field with the env key so that
-    # it is never displayed in the UI (and never at risk of being screen-shared).
+    # ── Key resolution (priority order) ────────────────────────────────────────
+    # 1. Whatever the user types in the sidebar (highest priority)
+    # 2. st.secrets["GROQ_API_KEY"]  (Streamlit Cloud / secrets.toml)
+    # 3. GROQ_API_KEY environment variable / .env file
+    # The text field is always blank so the key is never displayed in the UI.
+    secrets_key = ""
+    try:
+        secrets_key = st.secrets.get("GROQ_API_KEY", "")
+    except Exception:
+        pass  # secrets not configured – fine, continue
+
     env_key = os.environ.get("GROQ_API_KEY", "")
+
     api_key_input = st.text_input(
         "Groq API Key",
-        value="",                      # always blank – env key stays hidden
+        value="",                      # always blank – stored keys stay hidden
         type="password",
-        placeholder="gsk_…  (paste your key here)",
+        placeholder="gsk_…  (paste to override default key)",
         label_visibility="collapsed",
         help="Get a free key at console.groq.com/keys",
     )
-    # Prefer whatever the user typed; fall back to .env silently
-    api_key = api_key_input.strip() or env_key
+
+    # Resolve in priority order
+    api_key = api_key_input.strip() or secrets_key or env_key
 
     if api_key_input.strip():
-        st.markdown('<p style="color:#34d399;font-size:0.78rem;margin-top:0.4rem">✓ Key entered — ready to chat</p>', unsafe_allow_html=True)
+        st.markdown('<p style="color:#34d399;font-size:0.78rem;margin-top:0.4rem">✓ Custom key entered — ready to chat</p>', unsafe_allow_html=True)
+    elif secrets_key:
+        st.markdown('<p style="color:#34d399;font-size:0.78rem;margin-top:0.4rem">✓ Key loaded from Streamlit Secrets</p>', unsafe_allow_html=True)
     elif env_key:
         st.markdown('<p style="color:#34d399;font-size:0.78rem;margin-top:0.4rem">✓ Key loaded from environment</p>', unsafe_allow_html=True)
     else:
